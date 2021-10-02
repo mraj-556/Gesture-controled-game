@@ -1,0 +1,87 @@
+import random
+import cv2
+import mediapipe as mp
+
+      ############################################### Creating the hand object and setups ###################################################
+
+detect=mp.solutions.hands
+hands=detect.Hands(False,1,0.5,0.5)
+draw=mp.solutions.drawing_utils
+cap=cv2.VideoCapture(0)
+
+comp=['STONE','PAPER','SCISSOR']
+scorec,scoreu=0,0
+
+        ############################################### Detecting the hand and locations ###################################################
+
+while True:
+    s,frame=cap.read()
+    framergb=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+    out=hands.process(framergb)
+    if out.multi_hand_landmarks:
+        for loc in out.multi_hand_landmarks:
+            p=[]
+            for index,position in enumerate(loc.landmark):
+                h,w,c=frame.shape
+                x,y=int(position.x*w),int(position.y*h)
+                p.append([index,x,y])
+                # print(x,y)
+                # print(loc.landmark)
+                # print(index,position)
+                #cv2.circle(frame,(x,y),15,(0,255,0),cv2.FILLED)
+            #drawing=draw.draw_landmarks(frame,loc,detect.HAND_CONNECTIONS)
+            # if p!=0:
+            #     print(p[1])
+            
+      ############################################### Detecting the distances between all the fingers of hand ###################################################
+            
+            xd08 =p[0][2]-p[8][2]
+            xd012=p[0][2]-p[12][2]
+            xd016=p[0][2]-p[16][2]
+            xd020=p[0][2]-p[20][2]
+            # print(xd08,xd012,xd016,xd020)
+            
+      ############################################### Computer's choice against the human ###################################################
+            
+            compchoice=random.choice(comp)
+            
+      ###################################### Detecting the location of each finger and decides the user choice #########################################
+            
+            if xd08>120 and xd012>130 and xd016>130 and xd020>110:
+                choices='paper'
+            elif xd08<120 and xd012<130 and xd016<130 and xd020<110:
+                choices='STONE'
+            elif xd08>130 and xd012>140 and xd016<100 and xd020<100:
+                choices='SCISSOR'
+            else:
+                pass
+                
+      ############################################### writes the selection that the computer and user made ###################################################
+                
+            cv2.putText(frame,choices,(320,60),cv2.FONT_ITALIC,1,(255,0,0),5)
+            cv2.putText(frame,"Computer",(50,370),cv2.FONT_ITALIC,1,(0,255,255),5)
+            cv2.putText(frame,"User",(530,370),cv2.FONT_ITALIC,1,(0,255,255),5)
+            cv2.putText(frame,"Vs",(320,410),cv2.FONT_ITALIC,1,(0,0,255),3)
+            
+      ############################################### calculates the score of each if they win ###################################################
+            
+            compare=[compchoice,choices]
+            print(compare)
+            if compare[0]==compare[1]:
+                pass
+            elif (compare[0]=='STONE' and compare[1]=='SCISSOR') or (compare[0]=='PAPER' and compare[1]=='STONE') or (compare[0]=='SCISSOR' and compare[1]=='PAPER'):
+                scorec+=1
+            elif (compare[1]=='STONE' and compare[0]=='SCISSOR') or (compare[1]=='PAPER' and compare[0]=='STONE') or (compare[1]=='SCISSOR' and compare[0]=='PAPER'):
+                scoreu+=1
+                
+      ############################################### Shows the scores of computer and user on screen ###################################################
+                
+            print(scorec,scoreu)
+            cv2.putText(frame,str(scorec),(70,410),cv2.FONT_ITALIC,1,(0,255,0),5)
+            cv2.putText(frame,str(scoreu),(520,410),cv2.FONT_ITALIC,1,(0,255,0),5)
+            
+      ############################################### shows the result of code run and quits if said ###################################################
+
+    cv2.imshow('play',frame)
+    if cv2.waitKey(1)==13:
+        break
